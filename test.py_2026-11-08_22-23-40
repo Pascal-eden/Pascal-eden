@@ -1,0 +1,176 @@
+divider = "-" * 60
+
+def get_float(prompt):
+    while True:
+        try:
+            return float(input(prompt))
+        except ValueError:
+            print("Invalid number. Please try again.")
+
+
+
+def simple_interest():
+
+    principal = get_float('Principal: ')
+
+    rate = get_float('Annual rate (as decimal, e.g. 0.05 for 5%): ')
+
+    time = get_float('Time in years: ')
+    
+    try:
+
+        if principal >= 0 and rate >= 0 and time >= 0:
+
+            interest = principal * rate * time
+
+            final = principal + interest
+
+            return {"principal": principal,
+                    "interest": interest,
+                    "final": final,
+                    "rate": rate,
+                    "time": time
+                }
+
+        else: 
+            print('Input a positive integer or float')
+
+    except Exception as error:
+        print('Unexpected error occured: ', error)
+
+
+
+def compound_interest():
+
+    
+    principal = get_float('Principal: ')
+
+    rate = get_float('Annual rate (as decimal, e.g. 0.05 for 5%): ')
+
+    years = get_float('Number of years: ')
+
+    compounds = get_float('Compounds per year: ')
+
+    try:
+
+        if principal >= 0 and rate >= 0 and years >= 0 and compounds >= 0:
+            final = principal * (1 + rate / compounds) ** (compounds * years)
+
+            interest = final - principal
+
+            return {
+                "principal": principal,
+                "final": final,
+                "interest": interest,
+                "rate": rate,
+                "compounds": compounds,
+                "years": years,
+            }
+
+        else: 
+            print('Input a positive integer or float')
+
+    except Exception as error:
+        print('Unexpected error occured: ', error)
+
+
+
+def Compound_Annual_Growth_Rate():
+
+    
+    principal = get_float('Principal: ')
+
+    final = get_float('Final sum at the end of the period: ')
+
+    time = get_float('Time in years: ')
+
+
+    try:
+
+        if principal >= 0 and final >= 0 and time >= 0:
+
+            CAGR = (final/principal)**(1/time) - 1
+
+            return {
+                "principal": principal,
+                "final": final,
+                "CAGR": CAGR,
+                "time": time
+            }
+
+        else: 
+            print('Input a positive integer or float')
+
+    except Exception as error:
+        print('Unexpected error occured: ', error)
+
+
+
+operations = {'1': simple_interest,
+            '2': compound_interest,
+            '3': Compound_Annual_Growth_Rate
+            }
+
+def main():
+
+    print(divider)
+
+    print('COMPOUND INTEREST CALCULATOR'.center(60))
+
+    print(divider)
+
+    print(f''' Choose an operation:
+    1. Simple interest
+    2. Compound interest
+    3. CAGR''')
+
+    choice = input("Select operation: ").strip().lower()
+
+    while choice not in operations:
+        print("Invalid input. Try again.")
+        choice = input("Select operation: ").strip()
+
+    result = operations[choice]()
+
+    print(divider)
+
+    print('RESULTS')
+
+    print(divider)
+
+
+    print(f'Principal: ${result["principal"]:,.2f}')
+
+    print(f'Final: ${result["final"]:,.2f}')
+
+    if "interest" in result:
+        print(f'Interest: ${result["interest"]:,.2f}')
+
+    if "rate" in result:
+        print(f'rate: ${result["rate"]:,.2%}')
+
+    if "CAGR" in result:
+        print(f'CAGR: {result["CAGR"]:.2%}')
+
+    if "years" in result:
+        print(f'years: {result["years"]:.0%}')
+
+
+    print(divider)
+
+    if "CAGR" in result:
+        print(f'Interpretation: ${result["principal"]:,.2f} growing to ${result["final"]:,.2f} '
+              f'over {result["time"]:g} years is a {result["CAGR"]:.2%} yearly growth rate.')
+    else:
+        if "compounds" in result:
+            how = f'compounded {result["compounds"]:g} times a year'
+        else:
+            how = 'simple interest'
+        print(f'Interpretation: ${result["principal"]:,.2f} at {result["rate"]:.2%} ({how}) '
+              f'for {result["time"]:g} years becomes ${result["final"]:,.2f} '
+              f'— ${result["interest"]:,.2f} is interest.')
+
+
+if __name__ == "__main__":
+    main()
+
