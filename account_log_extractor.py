@@ -13,8 +13,8 @@ A "request" is the block of log lines bounded by two markers:
     END MARKER   : USSDCustomMiddleware|user with Token
 
 All complete matching requests (and any incomplete ones) are written to a
-single consolidated TXT file inside an ``Extracted_Requests`` folder created
-in the supplied log directory.
+single consolidated output file (CSV by default, or TXT) inside an
+``Extracted_Requests`` folder created in the supplied log directory.
 
 Design goals:
     * Accuracy first  - extract the whole request, never just the line.
@@ -28,6 +28,7 @@ Python : 3.6+
 from __future__ import annotations
 
 import argparse
+import csv
 import os
 import re
 import sys
@@ -71,6 +72,18 @@ class ExtractedRequest:
         self.lines = lines                  # original log lines (with newline)
         self.complete = complete            # True if both markers were found
         self.reason = reason                # why it is incomplete, if so
+
+    @property
+    def end_line_no(self):
+        """1-based line number of the last line in the request block."""
+        return self.start_line_no + len(self.lines) - 1
+
+    @property
+    def text(self):
+        """The full request block as one string (original content, verbatim)."""
+        return "".join(
+            line if line.endswith("\n") else line + "\n" for line in self.lines
+        ).rstrip("\n")
 
 
 # ---------------------------------------------------------------------------
@@ -265,20 +278,78 @@ def extract_requests_from_file(filename, full_path, account_matches):
 # 5. OUTPUT FILE GENERATION
 # ---------------------------------------------------------------------------
 def write_output(folder, account_number, complete_reqs, incomplete_reqs,
-                 files_scanned):
+                 files_scanned, out_format="csv"):
     """
-    Write every extracted request into one consolidated TXT file and return
-    the output file path.  The file is always created, even when there are no
-    matches, so the user always has a record of the search.
+    Write every extracted request into one consolidated output file and return
+    the list of paths written.  The file is always created, even when there are
+    no matches, so the user always has a record of the search.
+
+    ``out_format`` is one of 'csv' (default), 'txt', or 'both'.
     """
     out_dir = os.path.join(folder, OUTPUT_DIR_NAME)
     os.makedirs(out_dir, exist_ok=True)
 
     # Keep the filename safe across OSes by stripping path separators.
     safe_account = re.sub(r"[^A-Za-z0-9_.-]", "_", account_number)
-    out_name = f"Account_{safe_account}_Extracted_Requests.txt"
-    out_path = os.path.join(out_dir, out_name)
+    base = os.path.join(out_dir, f"Account_{safe_account}_Extracted_Requests")
 
+    paths = []
+    if out_format in ("csv", "both"):
+        paths.append(_write_csv_output(base + ".csv", account_number,
+                                       complete_reqs, incomplete_reqs,
+                                       files_scanned))
+    if out_format in ("txt", "both"):
+        paths.append(_write_txt_output(base + ".txt", account_number,
+                                       complete_reqs, incomplete_reqs,
+                                       files_scanned))
+    return paths
+
+
+def _write_csv_output(out_path, account_number, complete_reqs, incomplete_reqs,
+                      files_scanned):
+    """
+    Write one row per extracted request to a CSV file.
+
+    The full request block is preserved verbatim in the ``request_text``
+    column (newlines kept inside the quoted cell), so no log content is lost
+    while the result is still easy to filter/sort in Excel or pandas.
+    """
+    columns = [
+        "request_number",   # 1-based sequence number within its group
+        "status",           # COMPLETE or INCOMPLETE
+        "account_number",   # the account that was searched for
+        "source_file",      # log file the request came from
+        "start_line",       # 1-based line of the START marker
+        "end_line",         # 1-based line of the last captured line
+        "line_count",       # number of lines in the request block
+        "reason",           # why it is incomplete (blank when complete)
+        "request_text",     # the complete request, original content verbatim
+    ]
+
+    # newline="" is required by the csv module for correct line handling.
+    with open(out_path, "w", encoding="utf-8", newline="") as fh:
+        writer = csv.writer(fh, quoting=csv.QUOTE_ALL)
+        writer.writerow(columns)
+
+        for index, req in enumerate(complete_reqs, start=1):
+            writer.writerow([
+                index, "COMPLETE", account_number, req.source_file,
+                req.start_line_no, req.end_line_no, len(req.lines),
+                "", req.text,
+            ])
+
+        for index, req in enumerate(incomplete_reqs, start=1):
+            writer.writerow([
+                index, "INCOMPLETE", account_number, req.source_file,
+                req.start_line_no, req.end_line_no, len(req.lines),
+                req.reason, req.text,
+            ])
+    return out_path
+
+
+def _write_txt_output(out_path, account_number, complete_reqs, incomplete_reqs,
+                      files_scanned):
+    """Write the human-readable TXT report (one block per request)."""
     with open(out_path, "w", encoding="utf-8") as out:
         out.write(f"ACCOUNT NUMBER: {account_number}\n")
         out.write(f"GENERATED: {datetime.now():%Y-%m-%d %H:%M:%S}\n")
@@ -339,7 +410,7 @@ def write_output(folder, account_number, complete_reqs, incomplete_reqs,
 # ---------------------------------------------------------------------------
 # 6. ORCHESTRATION
 # ---------------------------------------------------------------------------
-def run(account_number, folder, extensions):
+def run(account_number, folder, extensions, out_format="csv"):
     """Drive the full extraction workflow and print progress to the console."""
     print("\nInitializing search...\n")
     print("Scanning daily log files...\n")
@@ -349,10 +420,10 @@ def run(account_number, folder, extensions):
         print(f"  [ERROR] No log files with extensions {extensions} "
               f"were found in: {folder}")
         # Still produce an (empty-result) output file for the record.
-        out_path = write_output(folder, account_number, [], [], 0)
-        _print_summary(account_number, 0, [], [], folder, out_path,
+        out_paths = write_output(folder, account_number, [], [], 0, out_format)
+        _print_summary(account_number, 0, [], [], folder, out_paths,
                        status="NO LOG FILES FOUND")
-        return out_path
+        return out_paths
 
     for name, _ in log_files:
         print(f"[FOUND] {name}")
@@ -382,17 +453,17 @@ def run(account_number, folder, extensions):
         except Exception as exc:  # noqa: BLE001 - keep the tool resilient
             print(f"  [WARNING] Error while processing '{name}': {exc}")
 
-    out_path = write_output(folder, account_number, complete_reqs,
-                            incomplete_reqs, files_scanned)
+    out_paths = write_output(folder, account_number, complete_reqs,
+                             incomplete_reqs, files_scanned, out_format)
 
     status = "SUCCESS" if complete_reqs else "NO MATCHING REQUESTS FOUND"
     _print_summary(account_number, files_scanned, complete_reqs,
-                   incomplete_reqs, folder, out_path, status)
-    return out_path
+                   incomplete_reqs, folder, out_paths, status)
+    return out_paths
 
 
 def _print_summary(account_number, files_scanned, complete_reqs,
-                   incomplete_reqs, folder, out_path, status):
+                   incomplete_reqs, folder, out_paths, status):
     """Print the final extraction summary block."""
     print()
     print(SEPARATOR)
@@ -409,8 +480,9 @@ def _print_summary(account_number, files_scanned, complete_reqs,
     print("Output Directory:")
     print(f"  {os.path.join(folder, OUTPUT_DIR_NAME)}")
     print()
-    print("Output File:")
-    print(f"  {os.path.basename(out_path)}")
+    print("Output File(s):")
+    for path in out_paths:
+        print(f"  {os.path.basename(path)}")
     print()
     print(SEPARATOR)
 
@@ -429,6 +501,9 @@ def parse_args(argv):
         "-e", "--extensions",
         help="Comma-separated list of log file extensions, "
              "e.g. '.log,.txt,.out'. Defaults to '.log,.txt'.")
+    parser.add_argument(
+        "-o", "--format", choices=("csv", "txt", "both"), default="csv",
+        help="Output format: 'csv' (default), 'txt', or 'both'.")
     return parser.parse_args(argv)
 
 
@@ -456,7 +531,7 @@ def main(argv=None):
         extensions = DEFAULT_EXTENSIONS
 
     try:
-        run(account_number, folder, extensions)
+        run(account_number, folder, extensions, args.format)
     except Exception as exc:  # noqa: BLE001 - final safety net
         print(f"[FATAL] Unexpected error: {exc}")
         return 1

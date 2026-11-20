@@ -143,14 +143,40 @@ python3 account_log_extractor.py -a 1234567890 -f ./sample_logs -e ".log,.txt,.o
 ## 4. Where the output goes
 
 The tool creates (if needed) an `Extracted_Requests` folder **inside the log
-folder you supplied**, and writes one consolidated file:
+folder you supplied**, and writes one consolidated file. **CSV is the default**;
+you can also produce TXT, or both:
 
 ```
+<your-log-folder>/Extracted_Requests/Account_<ACCOUNT_NUMBER>_Extracted_Requests.csv
 <your-log-folder>/Extracted_Requests/Account_<ACCOUNT_NUMBER>_Extracted_Requests.txt
 ```
 
-A file is **always** produced — even when there are zero matches — so you
-always have a record of the search.
+Choose the format with `-o/--format`: `csv` (default), `txt`, or `both`:
+
+```bash
+python3 account_log_extractor.py -a 1234567890 -f ./sample_logs -o csv
+python3 account_log_extractor.py -a 1234567890 -f ./sample_logs -o both
+```
+
+### CSV layout
+
+One **row per extracted request**, so the result is easy to filter/sort in
+Excel or pandas. The full request block is preserved verbatim (newlines kept)
+in the `request_text` column, so no log content is lost.
+
+| Column | Meaning |
+|--------|---------|
+| `request_number` | 1-based sequence number within its group |
+| `status` | `COMPLETE` or `INCOMPLETE` |
+| `account_number` | the account that was searched for |
+| `source_file` | log file the request came from |
+| `start_line` / `end_line` | line range of the block in the source file |
+| `line_count` | number of lines in the block |
+| `reason` | why it is incomplete (blank when complete) |
+| `request_text` | the complete request, original content verbatim |
+
+A file is **always** produced — even when there are zero matches (CSV: header
+row only) — so you always have a record of the search.
 
 ---
 
