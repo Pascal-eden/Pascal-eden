@@ -470,6 +470,15 @@ def build_report(
     return "\n".join(lines) + "\n"
 
 
+def build_records_only(matches: List[MatchRecord]) -> str:
+    """Return just the matching log records, one per line, untruncated.
+
+    Records are emitted in chronological order where timestamps can be parsed,
+    with unparseable/timeless records kept last. Original content is preserved.
+    """
+    return "".join(f"{m.record}\n" for m in _sorted_matches(matches))
+
+
 def write_report(report: str, output_path: Path) -> None:
     """Write the report to ``output_path`` (always UTF-8)."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -516,6 +525,11 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
         default=[".log", ".txt"],
         metavar="EXT",
         help="Text-based extensions to scan.",
+    )
+    parser.add_argument(
+        "--records-only",
+        action="store_true",
+        help="Output only the matching log records (no headers/timestamps/grouping).",
     )
     parser.add_argument(
         "--no-progress",
@@ -591,13 +605,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         progress=not args.no_progress,
     )
 
-    report = build_report(
-        matches=matches,
-        stats=stats,
-        folder=folder,
-        identifiers=args.ids,
-        case_sensitive=args.case_sensitive,
-    )
+    if args.records_only:
+        report = build_records_only(matches)
+    else:
+        report = build_report(
+            matches=matches,
+            stats=stats,
+            folder=folder,
+            identifiers=args.ids,
+            case_sensitive=args.case_sensitive,
+        )
     try:
         write_report(report, output_path)
     except OSError as exc:
