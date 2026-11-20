@@ -294,6 +294,8 @@ def write_output(folder, account_number, complete_reqs, incomplete_reqs,
             return out_path
 
         # ---- Complete requests ------------------------------------------
+        # Every batch is wrapped top and bottom by a full SEPARATOR line, so
+        # each extracted request is clearly delimited on both ends.
         for index, req in enumerate(complete_reqs, start=1):
             out.write("\n")
             out.write(SEPARATOR + "\n")
@@ -304,6 +306,9 @@ def write_output(folder, account_number, complete_reqs, incomplete_reqs,
             # Preserve original content exactly - write lines verbatim.
             for line in req.lines:
                 out.write(line if line.endswith("\n") else line + "\n")
+            # Closing separator for this batch.
+            out.write("\n")
+            out.write(SEPARATOR + "\n")
 
         # ---- Incomplete requests (clearly separated) --------------------
         if incomplete_reqs:
@@ -321,9 +326,11 @@ def write_output(folder, account_number, complete_reqs, incomplete_reqs,
                 out.write(SEPARATOR + "\n\n")
                 for line in req.lines:
                     out.write(line if line.endswith("\n") else line + "\n")
+                # Closing separator for this incomplete batch.
+                out.write("\n")
+                out.write(SEPARATOR + "\n")
 
         out.write("\n")
-        out.write(SEPARATOR + "\n")
         out.write("END OF EXTRACTION\n")
 
     return out_path
