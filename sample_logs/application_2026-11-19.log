@@ -1,0 +1,12 @@
+2026-11-19 07:45:00 INFO  Service started
+2026-11-19 10:22:33 DEBUG -----ENTERIG TO DECRYPT TOKEN STARTS----
+2026-11-19 10:22:33 DEBUG USSDCustomMiddleware|Decrypting bearer token payload
+2026-11-19 10:22:33 INFO  Lookup requested for Account Number: 1234567890
+2026-11-19 10:22:34 DEBUG Fetching profile for 1234567890 from core banking
+2026-11-19 10:22:34 INFO  Balance enquiry for account 1234567890 completed
+2026-11-19 10:22:34 INFO  USSDCustomMiddleware|user with Token eyJ0bbb granted access
+2026-11-19 14:00:00 INFO  Routine maintenance window begins
+2026-11-19 15:40:12 DEBUG -----ENTERIG TO DECRYPT TOKEN STARTS----
+2026-11-19 15:40:12 DEBUG USSDCustomMiddleware|Decrypting bearer token payload
+2026-11-19 15:40:12 INFO  Account Number: 5555555555
+2026-11-19 15:40:13 INFO  USSDCustomMiddleware|user with Token eyJ0ccc granted access

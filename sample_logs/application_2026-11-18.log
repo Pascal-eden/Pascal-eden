@@ -1,0 +1,19 @@
+2026-11-18 08:00:01 INFO  USSDCustomMiddleware|Incoming USSD request received
+2026-11-18 08:00:01 DEBUG -----ENTERIG TO DECRYPT TOKEN STARTS----
+2026-11-18 08:00:01 DEBUG USSDCustomMiddleware|Decrypting bearer token payload
+2026-11-18 08:00:02 DEBUG Parsed session id: SID-00091
+2026-11-18 08:00:02 INFO  Account Number: 1234567890
+2026-11-18 08:00:02 INFO  Channel: USSD  MSISDN: 2348030000001
+2026-11-18 08:00:02 DEBUG Token claims validated successfully
+2026-11-18 08:00:02 INFO  USSDCustomMiddleware|user with Token eyJ0eXAiOiJKV1Qi granted access
+2026-11-18 08:05:10 INFO  Heartbeat ping ok
+2026-11-18 08:10:44 DEBUG -----ENTERIG TO DECRYPT TOKEN STARTS----
+2026-11-18 08:10:44 DEBUG USSDCustomMiddleware|Decrypting bearer token payload
+2026-11-18 08:10:44 INFO  Account Number: 9999999999
+2026-11-18 08:10:44 INFO  Channel: USSD  MSISDN: 2348030009999
+2026-11-18 08:10:45 INFO  USSDCustomMiddleware|user with Token eyJ0eXAiOiJQQQi granted access
+2026-11-18 09:30:00 INFO  Scheduled cache refresh completed
+2026-11-18 11:15:20 DEBUG -----ENTERIG TO DECRYPT TOKEN STARTS----
+2026-11-18 11:15:20 DEBUG USSDCustomMiddleware|Decrypting bearer token payload
+2026-11-18 11:15:20 INFO  Account Number: 11234567890
+2026-11-18 11:15:21 INFO  USSDCustomMiddleware|user with Token eyJ0ZZZ granted access
